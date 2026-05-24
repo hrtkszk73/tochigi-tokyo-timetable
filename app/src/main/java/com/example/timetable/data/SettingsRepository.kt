@@ -40,9 +40,12 @@ data class UserSettings(
     val minutesToTochigiStation: Int,
 ) {
     fun minutesToBoardingStationFor(direction: DirectionKey): Int = when (direction) {
-        // 東京行きの便は栃木駅発 → 栃木駅までの所要時間
+        // 新幹線経路: 東京行きは栃木駅発、栃木行きは東京駅発
         DirectionKey.ToTokyo -> minutesToTochigiStation
-        // 栃木行きの便は東京駅発 → 東京駅までの所要時間
         DirectionKey.ToTochigi -> minutesToTokyoStation
+        // 東武特急: 「次便」ハイライト用途では使わない（時刻表タブのみ）。
+        // 互換のため駅に対応する分数を返す（浅草は未設定なので0）。
+        DirectionKey.TobuToAsakusa -> minutesToTochigiStation
+        DirectionKey.TobuToTochigi -> 0
     }
 }
