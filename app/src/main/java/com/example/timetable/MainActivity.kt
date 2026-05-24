@@ -42,7 +42,6 @@ class MainActivity : ComponentActivity() {
                             state = s,
                             onSelectTab = viewModel::selectTab,
                             onSelectTimetableDirection = viewModel::selectTimetableDirection,
-                            onSelectTobuDirection = viewModel::selectTobuDirection,
                             onUpdateMinutesToTokyo = viewModel::updateMinutesToTokyoStation,
                             onUpdateMinutesToTochigi = viewModel::updateMinutesToTochigiStation,
                         )

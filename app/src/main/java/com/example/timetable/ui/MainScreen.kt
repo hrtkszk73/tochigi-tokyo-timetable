@@ -29,11 +29,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -59,7 +59,6 @@ fun MainScreen(
     state: UiState.Ready,
     onSelectTab: (TopTab) -> Unit,
     onSelectTimetableDirection: (DirectionKey) -> Unit,
-    onSelectTobuDirection: (DirectionKey) -> Unit,
     onUpdateMinutesToTokyo: (Int) -> Unit,
     onUpdateMinutesToTochigi: (Int) -> Unit,
 ) {
@@ -94,36 +93,13 @@ fun MainScreen(
                     validFrom = state.timetable.validFrom,
                     now = state.now,
                 )
-                is TabContent.FullTimetable -> {
-                    val isTobu = state.selectedTab == TopTab.Tobu
-                    val (currentDir, callback, options) = if (isTobu) {
-                        Triple(
-                            state.tobuDirection,
-                            onSelectTobuDirection,
-                            listOf(
-                                DirectionKey.TobuToAsakusa to "栃木→浅草",
-                                DirectionKey.TobuToTochigi to "浅草→栃木",
-                            ),
-                        )
-                    } else {
-                        Triple(
-                            state.timetableDirection,
-                            onSelectTimetableDirection,
-                            listOf(
-                                DirectionKey.ToTokyo to "栃木→東京",
-                                DirectionKey.ToTochigi to "東京→栃木",
-                            ),
-                        )
-                    }
-                    FullTimetableContent(
-                        content = content,
-                        notes = state.timetable.notes,
-                        validFrom = state.timetable.validFrom,
-                        selectedDirection = currentDir,
-                        directionOptions = options,
-                        onSelectDirection = callback,
-                    )
-                }
+                is TabContent.FullTimetable -> FullTimetableContent(
+                    content = content,
+                    notes = state.timetable.notes,
+                    validFrom = state.timetable.validFrom,
+                    selectedDirection = state.timetableDirection,
+                    onSelectDirection = onSelectTimetableDirection,
+                )
             }
         }
     }
@@ -138,7 +114,6 @@ fun MainScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopTabs(
     selected: TopTab,
@@ -146,10 +121,7 @@ private fun TopTabs(
 ) {
     val tabs = TopTab.values().toList()
     val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
-    ScrollableTabRow(
-        selectedTabIndex = selectedIndex,
-        edgePadding = 0.dp,
-    ) {
+    TabRow(selectedTabIndex = selectedIndex) {
         tabs.forEachIndexed { index, tab ->
             Tab(
                 selected = index == selectedIndex,
@@ -400,7 +372,7 @@ private fun NoteCard(notes: List<String>, validFrom: String) {
     }
 }
 
-// =================== Timetable / Tobu tab (shared) ===================
+// =================== Timetable tab ===================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -409,7 +381,6 @@ private fun FullTimetableContent(
     notes: List<String>,
     validFrom: String,
     selectedDirection: DirectionKey,
-    directionOptions: List<Pair<DirectionKey, String>>,
     onSelectDirection: (DirectionKey) -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -422,19 +393,10 @@ private fun FullTimetableContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            directionOptions.forEachIndexed { index, (key, label) ->
-                SegmentedButton(
-                    selected = key == selectedDirection,
-                    onClick = { onSelectDirection(key) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = directionOptions.size),
-                ) { Text(label) }
-            }
-        }
+        TimetableDirectionSelector(
+            selected = selectedDirection,
+            onSelect = onSelectDirection,
+        )
 
         LazyColumn(
             state = listState,
@@ -459,6 +421,65 @@ private fun FullTimetableContent(
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     NoteCard(notes = notes, validFrom = validFrom)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimetableDirectionSelector(
+    selected: DirectionKey,
+    onSelect: (DirectionKey) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        DirectionSegmentRow(
+            label = "新幹線",
+            options = listOf(
+                DirectionKey.ToTokyo to "栃木→東京",
+                DirectionKey.ToTochigi to "東京→栃木",
+            ),
+            selected = selected,
+            onSelect = onSelect,
+        )
+        DirectionSegmentRow(
+            label = "特急",
+            options = listOf(
+                DirectionKey.TobuToAsakusa to "栃木→浅草",
+                DirectionKey.TobuToTochigi to "浅草→栃木",
+            ),
+            selected = selected,
+            onSelect = onSelect,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DirectionSegmentRow(
+    label: String,
+    options: List<Pair<DirectionKey, String>>,
+    selected: DirectionKey,
+    onSelect: (DirectionKey) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            modifier = Modifier.width(56.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
+            options.forEachIndexed { index, (key, optLabel) ->
+                SegmentedButton(
+                    selected = key == selected,
+                    onClick = { onSelect(key) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                ) { Text(optLabel) }
             }
         }
     }

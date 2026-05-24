@@ -25,7 +25,6 @@ enum class TopTab(val title: String) {
     NextToTokyo("東京へ行く"),
     NextToTochigi("栃木へ帰る"),
     Timetable("時刻表"),
-    Tobu("特急"),
 }
 
 class TimetableViewModel(app: Application) : AndroidViewModel(app) {
@@ -44,16 +43,14 @@ class TimetableViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _selectedTab = MutableStateFlow(TopTab.NextToTokyo)
     private val _timetableDirection = MutableStateFlow(DirectionKey.ToTokyo)
-    private val _tobuDirection = MutableStateFlow(DirectionKey.TobuToAsakusa)
 
     val uiState: StateFlow<UiState> = combine(
         nowFlow,
         _selectedTab,
         _timetableDirection,
-        _tobuDirection,
         settingsRepo.settings,
-    ) { now, tab, tableDir, tobuDir, settings ->
-        buildState(now, tab, tableDir, tobuDir, settings)
+    ) { now, tab, tableDir, settings ->
+        buildState(now, tab, tableDir, settings)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), UiState.Loading)
 
     fun selectTab(tab: TopTab) {
@@ -62,10 +59,6 @@ class TimetableViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTimetableDirection(direction: DirectionKey) {
         _timetableDirection.value = direction
-    }
-
-    fun selectTobuDirection(direction: DirectionKey) {
-        _tobuDirection.value = direction
     }
 
     fun updateMinutesToTokyoStation(minutes: Int) {
@@ -80,21 +73,18 @@ class TimetableViewModel(app: Application) : AndroidViewModel(app) {
         now: LocalDateTime,
         tab: TopTab,
         timetableDirection: DirectionKey,
-        tobuDirection: DirectionKey,
         settings: UserSettings,
     ): UiState {
         val content = when (tab) {
             TopTab.NextToTokyo -> buildNext(DirectionKey.ToTokyo, now, settings)
             TopTab.NextToTochigi -> buildNext(DirectionKey.ToTochigi, now, settings)
             TopTab.Timetable -> buildFullTimetable(timetableDirection, now)
-            TopTab.Tobu -> buildFullTimetable(tobuDirection, now)
         }
 
         return UiState.Ready(
             timetable = timetable,
             selectedTab = tab,
             timetableDirection = timetableDirection,
-            tobuDirection = tobuDirection,
             now = now,
             settings = settings,
             content = content,
@@ -164,7 +154,6 @@ sealed interface UiState {
         val timetable: Timetable,
         val selectedTab: TopTab,
         val timetableDirection: DirectionKey,
-        val tobuDirection: DirectionKey,
         val now: LocalDateTime,
         val settings: UserSettings,
         val content: TabContent,
