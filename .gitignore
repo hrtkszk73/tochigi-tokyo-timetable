@@ -17,3 +17,7 @@ Thumbs.db
 *.jks
 *.keystore
 release-keystore.properties
+
+# Downloaded artifacts / local APKs
+dist/
+*.apk
