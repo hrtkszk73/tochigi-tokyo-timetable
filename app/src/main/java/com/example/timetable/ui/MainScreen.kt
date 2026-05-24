@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.timetable.data.Direction
 import com.example.timetable.data.DirectionKey
@@ -79,11 +78,7 @@ fun MainScreen(
                 onSelect = onSelectDirection,
             )
 
-            if (state.isWeekend) {
-                WeekendWarning()
-            } else {
-                Content(state = state)
-            }
+            Content(state = state)
         }
     }
 
@@ -327,32 +322,6 @@ private fun NoTrainCard() {
             Text(
                 text = "翌朝の便は明日になってから表示されます。",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WeekendWarning() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp),
-        ) {
-            Text(
-                text = "土日祝のダイヤは未対応",
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "このアプリは平日ダイヤのみ収録しています。土曜・日曜・祝日は実際のダイヤと異なるため、表示を停止しています。",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

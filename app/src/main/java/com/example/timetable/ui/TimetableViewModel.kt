@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -65,7 +64,6 @@ class TimetableViewModel(app: Application) : AndroidViewModel(app) {
         settings: UserSettings,
     ): UiState {
         val direction = timetable.direction(directionKey)
-        val isWeekend = now.dayOfWeek == DayOfWeek.SATURDAY || now.dayOfWeek == DayOfWeek.SUNDAY
         val offsetMinutes = settings.minutesToBoardingStationFor(directionKey)
         val effectiveNow = now.toLocalTime().plusMinutes(offsetMinutes.toLong())
 
@@ -78,7 +76,6 @@ class TimetableViewModel(app: Application) : AndroidViewModel(app) {
             timetable = timetable,
             direction = direction,
             now = now,
-            isWeekend = isWeekend,
             offsetMinutes = offsetMinutes,
             effectiveDepartureCutoff = effectiveNow,
             nextTrain = upcoming.firstOrNull(),
@@ -94,7 +91,6 @@ sealed interface UiState {
         val timetable: Timetable,
         val direction: com.example.timetable.data.Direction,
         val now: LocalDateTime,
-        val isWeekend: Boolean,
         val offsetMinutes: Int,
         val effectiveDepartureCutoff: LocalTime,
         val nextTrain: Train?,
