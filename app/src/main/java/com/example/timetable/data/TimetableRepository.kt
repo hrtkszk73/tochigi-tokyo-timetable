@@ -17,9 +17,9 @@ class TimetableRepository(private val context: Context) {
             (0 until arr.length()).map { arr.getString(it) }
         }
 
-        val byDirection = DirectionKey.values().associateWith { key ->
-            parseDirection(key, root.getJSONObject(key.jsonKey))
-        }
+        val byDirection = DirectionKey.values()
+            .filter { root.has(it.jsonKey) }
+            .associateWith { key -> parseDirection(key, root.getJSONObject(key.jsonKey)) }
 
         return Timetable(
             notes = notes,
@@ -39,12 +39,11 @@ class TimetableRepository(private val context: Context) {
         val trainsArr = obj.getJSONArray("trains")
         val trains = (0 until trainsArr.length()).map { i ->
             val t = trainsArr.getJSONObject(i)
-            Train(
-                departure = parseTime(t.getString("departure"))!!,
-                transferArrival = parseTime(t.optString("transferArrival", null)),
-                transferDeparture = parseTime(t.optString("transferDeparture", null)),
-                arrival = parseTime(t.optString("arrival", null)),
-            )
+            val stopTimesArr = t.getJSONArray("stopTimes")
+            val stopTimes = (0 until stopTimesArr.length()).map { j ->
+                parseTime(stopTimesArr.optString(j, null))
+            }
+            Train(stopTimes = stopTimes)
         }
         return Direction(
             key = key,

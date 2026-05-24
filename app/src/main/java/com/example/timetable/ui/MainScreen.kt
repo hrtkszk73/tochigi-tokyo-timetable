@@ -29,11 +29,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -59,6 +59,7 @@ fun MainScreen(
     state: UiState.Ready,
     onSelectTab: (TopTab) -> Unit,
     onSelectTimetableDirection: (DirectionKey) -> Unit,
+    onSelectTobuDirection: (DirectionKey) -> Unit,
     onUpdateMinutesToTokyo: (Int) -> Unit,
     onUpdateMinutesToTochigi: (Int) -> Unit,
 ) {
@@ -93,13 +94,36 @@ fun MainScreen(
                     validFrom = state.timetable.validFrom,
                     now = state.now,
                 )
-                is TabContent.FullTimetable -> FullTimetableContent(
-                    content = content,
-                    notes = state.timetable.notes,
-                    validFrom = state.timetable.validFrom,
-                    selectedDirection = state.timetableDirection,
-                    onSelectDirection = onSelectTimetableDirection,
-                )
+                is TabContent.FullTimetable -> {
+                    val isTobu = state.selectedTab == TopTab.Tobu
+                    val (currentDir, callback, options) = if (isTobu) {
+                        Triple(
+                            state.tobuDirection,
+                            onSelectTobuDirection,
+                            listOf(
+                                DirectionKey.TobuToAsakusa to "栃木→浅草",
+                                DirectionKey.TobuToTochigi to "浅草→栃木",
+                            ),
+                        )
+                    } else {
+                        Triple(
+                            state.timetableDirection,
+                            onSelectTimetableDirection,
+                            listOf(
+                                DirectionKey.ToTokyo to "栃木→東京",
+                                DirectionKey.ToTochigi to "東京→栃木",
+                            ),
+                        )
+                    }
+                    FullTimetableContent(
+                        content = content,
+                        notes = state.timetable.notes,
+                        validFrom = state.timetable.validFrom,
+                        selectedDirection = currentDir,
+                        directionOptions = options,
+                        onSelectDirection = callback,
+                    )
+                }
             }
         }
     }
@@ -114,6 +138,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopTabs(
     selected: TopTab,
@@ -121,7 +146,10 @@ private fun TopTabs(
 ) {
     val tabs = TopTab.values().toList()
     val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
-    TabRow(selectedTabIndex = selectedIndex) {
+    ScrollableTabRow(
+        selectedTabIndex = selectedIndex,
+        edgePadding = 0.dp,
+    ) {
         tabs.forEachIndexed { index, tab ->
             Tab(
                 selected = index == selectedIndex,
@@ -275,12 +303,9 @@ private fun JourneyTimeline(
 ) {
     val hhmm = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val nullStr = "—"
-    val rows = listOf(
-        direction.stations[0] to train.departure.format(hhmm),
-        direction.stations[1] to (train.transferArrival?.format(hhmm) ?: nullStr),
-        direction.stations[2] to (train.transferDeparture?.format(hhmm) ?: nullStr),
-        direction.stations[3] to (train.arrival?.format(hhmm) ?: nullStr),
-    )
+    val rows = train.stopTimes.mapIndexed { idx, time ->
+        direction.stations[idx] to (time?.format(hhmm) ?: nullStr)
+    }
     val segmentLabels = direction.segmentLabels
 
     Column {
@@ -313,7 +338,7 @@ private fun JourneyTimeline(
                     fontWeight = if (index == 0 || index == rows.lastIndex) FontWeight.SemiBold else FontWeight.Normal,
                 )
             }
-            if (index < rows.lastIndex) {
+            if (index < rows.lastIndex && index < segmentLabels.size) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.width(4.dp))
                     Box(
@@ -375,7 +400,7 @@ private fun NoteCard(notes: List<String>, validFrom: String) {
     }
 }
 
-// =================== Timetable tab ===================
+// =================== Timetable / Tobu tab (shared) ===================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -384,6 +409,7 @@ private fun FullTimetableContent(
     notes: List<String>,
     validFrom: String,
     selectedDirection: DirectionKey,
+    directionOptions: List<Pair<DirectionKey, String>>,
     onSelectDirection: (DirectionKey) -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -391,27 +417,21 @@ private fun FullTimetableContent(
     LaunchedEffect(selectedDirection, content.highlightedIndex) {
         val target = content.highlightedIndex
         if (target != null) {
-            // LazyColumn の item 構成: [0]=列ヘッダ, [1..N]=便, [N+1]=注記。便iは index (i+1)
             listState.scrollToItem(index = (target + 1).coerceAtMost(content.trains.size))
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 方向セグメント
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            val options = listOf(
-                DirectionKey.ToTokyo to "栃木→東京",
-                DirectionKey.ToTochigi to "東京→栃木",
-            )
-            options.forEachIndexed { index, (key, label) ->
+            directionOptions.forEachIndexed { index, (key, label) ->
                 SegmentedButton(
                     selected = key == selectedDirection,
                     onClick = { onSelectDirection(key) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = directionOptions.size),
                 ) { Text(label) }
             }
         }
@@ -421,7 +441,6 @@ private fun FullTimetableContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            // 列ヘッダ
             item {
                 TimetableHeaderRow(direction = content.direction)
                 HorizontalDivider()
@@ -475,12 +494,7 @@ private fun TimetableRow(
     val rowBg = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
     val textColor = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     val nullStr = "—"
-    val cells = listOf(
-        train.departure.format(hhmm),
-        train.transferArrival?.format(hhmm) ?: nullStr,
-        train.transferDeparture?.format(hhmm) ?: nullStr,
-        train.arrival?.format(hhmm) ?: nullStr,
-    )
+    val cells = train.stopTimes.map { it?.format(hhmm) ?: nullStr }
     Row(
         modifier = Modifier
             .fillMaxWidth()

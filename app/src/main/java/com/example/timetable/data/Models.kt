@@ -5,16 +5,16 @@ import java.time.LocalTime
 enum class DirectionKey(val jsonKey: String) {
     ToTokyo("toTokyo"),
     ToTochigi("toTochigi"),
+    TobuToAsakusa("tobuToAsakusa"),
+    TobuToTochigi("tobuToTochigi"),
 }
 
 data class Train(
-    val departure: LocalTime,
-    val transferArrival: LocalTime?,
-    val transferDeparture: LocalTime?,
-    val arrival: LocalTime?,
+    val stopTimes: List<LocalTime?>,
 ) {
-    val hasFullJourney: Boolean
-        get() = transferDeparture != null && arrival != null
+    val departure: LocalTime get() = stopTimes.first()!!
+    val arrival: LocalTime? get() = stopTimes.last()
+    val hasFullJourney: Boolean get() = stopTimes.all { it != null }
 }
 
 data class Direction(
