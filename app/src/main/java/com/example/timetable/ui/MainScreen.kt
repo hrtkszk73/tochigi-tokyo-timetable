@@ -13,23 +13,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,14 +51,14 @@ import com.example.timetable.data.Direction
 import com.example.timetable.data.DirectionKey
 import com.example.timetable.data.Train
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     state: UiState.Ready,
-    onSelectDirection: (DirectionKey) -> Unit,
+    onSelectTab: (TopTab) -> Unit,
+    onSelectTimetableDirection: (DirectionKey) -> Unit,
     onUpdateMinutesToTokyo: (Int) -> Unit,
     onUpdateMinutesToTochigi: (Int) -> Unit,
 ) {
@@ -73,12 +81,26 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            DirectionTabs(
-                selected = state.direction.key,
-                onSelect = onSelectDirection,
+            TopTabs(
+                selected = state.selectedTab,
+                onSelect = onSelectTab,
             )
 
-            Content(state = state)
+            when (val content = state.content) {
+                is TabContent.Next -> NextTrainsContent(
+                    content = content,
+                    notes = state.timetable.notes,
+                    validFrom = state.timetable.validFrom,
+                    now = state.now,
+                )
+                is TabContent.FullTimetable -> FullTimetableContent(
+                    content = content,
+                    notes = state.timetable.notes,
+                    validFrom = state.timetable.validFrom,
+                    selectedDirection = state.timetableDirection,
+                    onSelectDirection = onSelectTimetableDirection,
+                )
+            }
         }
     }
 
@@ -93,56 +115,58 @@ fun MainScreen(
 }
 
 @Composable
-private fun DirectionTabs(
-    selected: DirectionKey,
-    onSelect: (DirectionKey) -> Unit,
+private fun TopTabs(
+    selected: TopTab,
+    onSelect: (TopTab) -> Unit,
 ) {
-    val tabs = listOf(
-        DirectionKey.ToTokyo to "東京へ行く",
-        DirectionKey.ToTochigi to "栃木へ帰る",
-    )
-    val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
+    val tabs = TopTab.values().toList()
+    val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
     TabRow(selectedTabIndex = selectedIndex) {
-        tabs.forEachIndexed { index, (key, label) ->
+        tabs.forEachIndexed { index, tab ->
             Tab(
                 selected = index == selectedIndex,
-                onClick = { onSelect(key) },
-                text = { Text(label) },
+                onClick = { onSelect(tab) },
+                text = { Text(tab.title) },
             )
         }
     }
 }
 
+// =================== Next trains tab ===================
+
 @Composable
-private fun Content(state: UiState.Ready) {
+private fun NextTrainsContent(
+    content: TabContent.Next,
+    notes: List<String>,
+    validFrom: String,
+    now: LocalDateTime,
+) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             ClockAndOffsetInfo(
-                now = state.now,
-                offsetMinutes = state.offsetMinutes,
-                effectiveDeparture = state.effectiveDepartureCutoff,
-                direction = state.direction,
+                now = now,
+                offsetMinutes = content.offsetMinutes,
+                direction = content.direction,
             )
         }
 
         item {
-            if (state.nextTrain != null) {
+            if (content.nextTrain != null) {
                 NextTrainCard(
-                    train = state.nextTrain,
-                    direction = state.direction,
-                    now = state.now,
+                    train = content.nextTrain,
+                    direction = content.direction,
+                    now = now,
                 )
             } else {
                 NoTrainCard()
             }
         }
 
-        if (state.followingTrains.isNotEmpty()) {
+        if (content.followingTrains.isNotEmpty()) {
             item {
                 Text(
                     text = "以降の便",
@@ -150,13 +174,13 @@ private fun Content(state: UiState.Ready) {
                     modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                 )
             }
-            items(state.followingTrains) { train ->
-                UpcomingTrainCard(train = train, direction = state.direction)
+            items(content.followingTrains) { train ->
+                UpcomingTrainCard(train = train, direction = content.direction)
             }
         }
 
         item {
-            NoteCard(notes = state.timetable.notes, validFrom = state.timetable.validFrom)
+            NoteCard(notes = notes, validFrom = validFrom)
         }
     }
 }
@@ -165,12 +189,12 @@ private fun Content(state: UiState.Ready) {
 private fun ClockAndOffsetInfo(
     now: LocalDateTime,
     offsetMinutes: Int,
-    effectiveDeparture: LocalTime,
     direction: Direction,
 ) {
     val timeFmt = remember { DateTimeFormatter.ofPattern("HH:mm:ss") }
     val hhmm = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val boardingStation = direction.stations.first()
+    val effective = now.toLocalTime().plusMinutes(offsetMinutes.toLong())
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -182,7 +206,7 @@ private fun ClockAndOffsetInfo(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "${boardingStation}まで${offsetMinutes}分 → 到着予想 ${effectiveDeparture.format(hhmm)} 以降の便を表示",
+                text = "${boardingStation}まで${offsetMinutes}分 → 到着予想 ${effective.format(hhmm)} 以降の便を表示",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -347,6 +371,133 @@ private fun NoteCard(notes: List<String>, validFrom: String) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+// =================== Timetable tab ===================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FullTimetableContent(
+    content: TabContent.FullTimetable,
+    notes: List<String>,
+    validFrom: String,
+    selectedDirection: DirectionKey,
+    onSelectDirection: (DirectionKey) -> Unit,
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(selectedDirection, content.highlightedIndex) {
+        val target = content.highlightedIndex
+        if (target != null) {
+            // LazyColumn の item 構成: [0]=列ヘッダ, [1..N]=便, [N+1]=注記。便iは index (i+1)
+            listState.scrollToItem(index = (target + 1).coerceAtMost(content.trains.size))
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 方向セグメント
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            val options = listOf(
+                DirectionKey.ToTokyo to "栃木→東京",
+                DirectionKey.ToTochigi to "東京→栃木",
+            )
+            options.forEachIndexed { index, (key, label) ->
+                SegmentedButton(
+                    selected = key == selectedDirection,
+                    onClick = { onSelectDirection(key) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                ) { Text(label) }
+            }
+        }
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
+            // 列ヘッダ
+            item {
+                TimetableHeaderRow(direction = content.direction)
+                HorizontalDivider()
+            }
+
+            itemsIndexed(content.trains) { index, train ->
+                TimetableRow(
+                    train = train,
+                    highlighted = index == content.highlightedIndex,
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+
+            item {
+                Spacer(Modifier.height(16.dp))
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    NoteCard(notes = notes, validFrom = validFrom)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimetableHeaderRow(direction: Direction) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        direction.stations.forEach { name ->
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentWidth(Alignment.CenterHorizontally),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimetableRow(
+    train: Train,
+    highlighted: Boolean,
+) {
+    val hhmm = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val rowBg = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val textColor = if (highlighted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val nullStr = "—"
+    val cells = listOf(
+        train.departure.format(hhmm),
+        train.transferArrival?.format(hhmm) ?: nullStr,
+        train.transferDeparture?.format(hhmm) ?: nullStr,
+        train.arrival?.format(hhmm) ?: nullStr,
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(rowBg)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        cells.forEach { time ->
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (highlighted) FontWeight.SemiBold else FontWeight.Normal,
+                color = textColor,
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentWidth(Alignment.CenterHorizontally),
+            )
         }
     }
 }

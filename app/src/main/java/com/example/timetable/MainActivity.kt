@@ -40,7 +40,8 @@ class MainActivity : ComponentActivity() {
                         }
                         is UiState.Ready -> MainScreen(
                             state = s,
-                            onSelectDirection = viewModel::selectDirection,
+                            onSelectTab = viewModel::selectTab,
+                            onSelectTimetableDirection = viewModel::selectTimetableDirection,
                             onUpdateMinutesToTokyo = viewModel::updateMinutesToTokyoStation,
                             onUpdateMinutesToTochigi = viewModel::updateMinutesToTochigiStation,
                         )
