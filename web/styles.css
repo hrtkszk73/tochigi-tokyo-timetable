@@ -1,0 +1,416 @@
+:root {
+  --color-primary: #1F5DAA;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #D6E4FF;
+  --color-on-primary-container: #001B3D;
+  --color-surface: #FFFFFF;
+  --color-on-surface: #1A1C1E;
+  --color-surface-variant: #E7ECF3;
+  --color-on-surface-variant: #43474E;
+  --color-outline: #C3C7CE;
+  --color-outline-variant: #D8DBE1;
+  --color-background: #F6F8FB;
+  --color-danger: #B3261E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #A9C7FF;
+    --color-on-primary: #002F65;
+    --color-primary-container: #1A427C;
+    --color-on-primary-container: #D6E4FF;
+    --color-surface: #1A1C1E;
+    --color-on-surface: #E3E2E6;
+    --color-surface-variant: #2C2F33;
+    --color-on-surface-variant: #C3C7CE;
+    --color-outline: #8D9199;
+    --color-outline-variant: #43474E;
+    --color-background: #101216;
+    --color-danger: #F2B8B5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+               "Noto Sans JP", "Yu Gothic", "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Header */
+.app-header {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  margin-top: calc(-1 * env(safe-area-inset-top));
+}
+
+.app-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:hover, .icon-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-outline-variant);
+  position: sticky;
+  top: calc(48px + env(safe-area-inset-top));
+  z-index: 9;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 14px 8px 12px;
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+
+.tab[aria-selected="true"] {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Content area */
+.content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.content.no-padding {
+  padding: 0;
+}
+
+/* Cards */
+.card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+.card--variant {
+  background: var(--color-surface-variant);
+}
+.card--primary {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}
+
+.card h2, .card h3 {
+  margin: 0 0 4px 0;
+}
+
+.clock-card .clock {
+  font-size: 20px;
+  font-weight: 600;
+}
+.clock-card .info {
+  font-size: 13px;
+  color: var(--color-on-surface-variant);
+  margin-top: 4px;
+}
+
+/* Next train big card */
+.next-card {
+  padding: 20px;
+}
+.next-card .label {
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+.next-card .big-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.next-card .big-time {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.next-card .countdown {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Journey timeline */
+.timeline {
+  margin-top: 12px;
+}
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 0;
+}
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+.card--primary .timeline-dot {
+  background: var(--color-on-primary-container);
+}
+.timeline-label {
+  font-size: 14px;
+  width: 96px;
+}
+.timeline-time {
+  font-size: 17px;
+}
+.timeline-row.endpoint .timeline-time {
+  font-weight: 600;
+  font-size: 18px;
+}
+.timeline-segment {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 2px 0;
+  margin-left: 4px;
+}
+.timeline-segment .segment-bar {
+  width: 2px;
+  height: 20px;
+  background: var(--color-outline-variant);
+}
+.timeline-segment .segment-label {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+/* Section header */
+.section-title {
+  padding: 8px 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Note card */
+.note-card {
+  font-size: 12px;
+}
+.note-card h3 {
+  font-size: 13px;
+}
+.note-card ul {
+  padding: 0;
+  margin: 6px 0 0;
+  list-style: none;
+}
+.note-card li {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  padding: 1px 0;
+}
+.note-card li::before {
+  content: "・";
+  margin-right: 2px;
+}
+
+/* Direction segments (Timetable tab) */
+.direction-selector {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dir-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dir-row .dir-label {
+  width: 56px;
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+}
+.segmented {
+  display: flex;
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid var(--color-outline);
+  overflow: hidden;
+}
+.segmented button {
+  flex: 1;
+  background: var(--color-surface);
+  border: none;
+  padding: 10px 6px;
+  font-size: 13px;
+  color: var(--color-on-surface);
+  cursor: pointer;
+  border-right: 1px solid var(--color-outline);
+}
+.segmented button:last-child { border-right: none; }
+.segmented button[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+}
+
+/* Timetable table */
+.timetable-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.timetable-header, .timetable-row {
+  display: flex;
+  padding: 10px 16px;
+  align-items: center;
+}
+.timetable-header {
+  background: var(--color-surface-variant);
+  color: var(--color-on-surface-variant);
+  font-size: 13px;
+  border-top: 1px solid var(--color-outline-variant);
+  border-bottom: 1px solid var(--color-outline-variant);
+  position: sticky;
+  top: calc(48px + 44px + env(safe-area-inset-top));
+  z-index: 8;
+}
+.timetable-row {
+  border-bottom: 1px solid var(--color-outline-variant);
+  font-size: 16px;
+}
+.timetable-row.highlight {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  font-weight: 600;
+}
+.timetable-header > *, .timetable-row > * {
+  flex: 1;
+  text-align: center;
+}
+
+/* No train state */
+.no-train {
+  color: var(--color-on-surface-variant);
+  font-size: 14px;
+}
+
+/* Settings dialog */
+.settings-dialog {
+  border: none;
+  border-radius: 20px;
+  padding: 0;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  max-width: min(92vw, 420px);
+  width: 100%;
+}
+.settings-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+.settings-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-form h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin: 0;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.setting-label, .setting-value {
+  font-size: 14px;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-primary);
+}
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.text-btn:hover { background: rgba(31, 93, 170, .08); }
+
+/* Loading */
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-on-surface-variant);
+}
+
+/* Small screens */
+@media (max-width: 360px) {
+  .segmented button { font-size: 12px; padding: 8px 4px; }
+  .dir-row .dir-label { width: 44px; font-size: 13px; }
+  .timeline-label { width: 84px; font-size: 13px; }
+  .app-title { font-size: 16px; }
+}

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1F5DAA" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0B1D3A" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="栃木時刻表" />
+  <meta name="description" content="栃木⇔東京の新幹線・東武特急の時刻表と次の便を確認できるPWA" />
+  <title>栃木⇔東京 時刻表</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/favicon.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="app-title">栃木⇔東京 時刻表</h1>
+    <button type="button" class="icon-btn" id="settings-btn" aria-label="設定">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+        <path d="M19.14 12.94c.04-.31.06-.62.06-.94 0-.32-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.55-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.65 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.62-.06.94 0 .32.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.5.39 1.03.7 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.13-.55 1.62-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+      </svg>
+    </button>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button type="button" class="tab" role="tab" data-tab="next-tokyo">東京へ行く</button>
+    <button type="button" class="tab" role="tab" data-tab="next-tochigi">栃木へ帰る</button>
+    <button type="button" class="tab" role="tab" data-tab="timetable">時刻表</button>
+  </nav>
+
+  <main id="content" class="content" aria-live="polite"></main>
+
+  <dialog id="settings-dialog" class="settings-dialog">
+    <form method="dialog" class="settings-form">
+      <h2>駅までの所要時間</h2>
+      <p class="hint">現在地から駅まで何分かかるかを設定します。アプリはこの時間を足してから「次に乗れる電車」を判定します。</p>
+      <label class="setting-row">
+        <span class="setting-label">東京駅まで</span>
+        <span class="setting-value"><span id="tokyo-minutes-value">30</span> 分</span>
+      </label>
+      <input type="range" id="tokyo-minutes" min="0" max="120" step="1" />
+      <label class="setting-row">
+        <span class="setting-label">栃木駅まで</span>
+        <span class="setting-value"><span id="tochigi-minutes-value">10</span> 分</span>
+      </label>
+      <input type="range" id="tochigi-minutes" min="0" max="120" step="1" />
+      <div class="dialog-buttons">
+        <button type="button" id="settings-cancel" class="text-btn">キャンセル</button>
+        <button type="submit" id="settings-save" class="text-btn primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('SW registration failed', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
