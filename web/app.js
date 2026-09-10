@@ -33,6 +33,10 @@ const state = {
     minutesToTochigiStation: parseInt(localStorage.getItem(LS.tochigiMin) ?? DEFAULTS.minutesToTochigiStation, 10),
   },
   tickTimer: null,
+  // Which "(tab, direction)" scroll target we've already auto-scrolled to.
+  // Reset on tab/direction change so a fresh open jumps to the current train,
+  // but background ticks don't yank the user's scroll position.
+  autoScrolledFor: null,
 };
 
 // --- Utilities ---
@@ -268,9 +272,12 @@ function renderTimetable(root, now) {
   });
   root.appendChild(table);
 
-  // Scroll highlighted row into view — 'start' + scroll-margin-top on the row
-  // leaves the sticky header stack visible above.
-  if (highlightIdx >= 0) {
+  // Auto-scroll to the highlighted row, but only once per (tab, direction).
+  // Background ticks re-render every 15s; without this guard, the page would
+  // yank the scroll position back every tick.
+  const scrollKey = `timetable:${state.timetableDirection}`;
+  if (highlightIdx >= 0 && state.autoScrolledFor !== scrollKey) {
+    state.autoScrolledFor = scrollKey;
     requestAnimationFrame(() => {
       const target = table.querySelector(`.timetable-row[data-train-index="${highlightIdx}"]`);
       if (target) target.scrollIntoView({ block: 'start', behavior: 'auto' });
@@ -302,6 +309,7 @@ function dirRow(label, opts) {
 function selectTab(tab) {
   if (!TAB_KEYS.includes(tab)) return;
   state.selectedTab = tab;
+  state.autoScrolledFor = null;
   localStorage.setItem(LS.tab, tab);
   renderTabs();
   renderContent();
@@ -309,6 +317,7 @@ function selectTab(tab) {
 
 function selectTimetableDirection(key) {
   state.timetableDirection = key;
+  state.autoScrolledFor = null;
   localStorage.setItem(LS.timetableDir, key);
   renderContent();
 }
