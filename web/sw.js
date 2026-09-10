@@ -2,7 +2,7 @@
 // Cache the app shell; re-fetch timetable.json with network-first strategy so
 // updates ship next time the app is opened online, but still work offline.
 
-const VERSION = 'v3-2026-09-10';
+const VERSION = 'v4-2026-09-10';
 const SHELL_CACHE = `tt-shell-${VERSION}`;
 const SHELL_URLS = [
   './',

@@ -35,7 +35,6 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
                "Noto Sans JP", "Yu Gothic", "Segoe UI", Roboto, sans-serif;
   background-color: var(--color-background);
@@ -43,9 +42,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Body grows with content so that page-level scroll works and
+   the sticky app-header stays pinned to the viewport top. */
 body {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -116,7 +115,6 @@ body {
 
 /* Content area */
 .content {
-  flex: 1;
   padding: 16px;
   display: flex;
   flex-direction: column;
