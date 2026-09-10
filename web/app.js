@@ -268,11 +268,12 @@ function renderTimetable(root, now) {
   });
   root.appendChild(table);
 
-  // Scroll highlighted row into view
+  // Scroll highlighted row into view — 'start' + scroll-margin-top on the row
+  // leaves the sticky header stack visible above.
   if (highlightIdx >= 0) {
     requestAnimationFrame(() => {
-      const el = table.querySelector(`.timetable-row[data-train-index="${highlightIdx}"]`);
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+      const target = table.querySelector(`.timetable-row[data-train-index="${highlightIdx}"]`);
+      if (target) target.scrollIntoView({ block: 'start', behavior: 'auto' });
     });
   }
 
